@@ -10,3 +10,6 @@ coverage/
 *.key
 *.pem
 *.tsbuildinfo
+
+# Vendor keys and generated data
+.data/
