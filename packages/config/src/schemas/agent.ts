@@ -4,7 +4,7 @@ import { z } from "zod";
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("production"),
   CONTROL_PANEL_URL: z.string().url(),
-  INSTANCE_ID: z.string().uuid().optional(),
+  INSTANCE_ID: z.string().optional(), //uuid().optional(),
   /** RSA-4096 instance private key (PEM) — signs heartbeat payloads */
   AGENT_PRIVATE_KEY: z.string().min(100).optional(),
   /** RSA-4096 vendor public key (PEM) — verifies signed commands/licenses */
@@ -24,12 +24,19 @@ const schema = z.object({
   AGENT_PRIVATE_KEY_PATH: z.string().optional(),
   INSTALLER_LOCK_FILE: z
     .string()
-    .default(`${process.env["HOME"] ?? "/home/ahmad"}/hospital-cms/installer.lock`),
-  LOG_LEVEL: z.enum(["error", "warn", "info", "debug", "trace"]).default("info"),
+    .default(
+      `${process.env["HOME"] ?? "/home/ahmad"}/hospital-cms/installer.lock`,
+    ),
+  LOG_LEVEL: z
+    .enum(["error", "warn", "info", "debug", "trace"])
+    .default("info"),
 });
 
 type AgentConfigInput = z.infer<typeof schema>;
-export type AgentConfig = Omit<AgentConfigInput, "INSTANCE_ID" | "AGENT_PRIVATE_KEY"> & {
+export type AgentConfig = Omit<
+  AgentConfigInput,
+  "INSTANCE_ID" | "AGENT_PRIVATE_KEY"
+> & {
   INSTANCE_ID: string;
   AGENT_PRIVATE_KEY: string;
 };
@@ -70,22 +77,22 @@ export function getAgentConfig(): AgentConfig {
     }
 
     const resolvedInstanceId =
-      result.data.INSTANCE_ID
-      ?? readInstanceIdFromLockFile(result.data.INSTALLER_LOCK_FILE);
+      result.data.INSTANCE_ID ??
+      readInstanceIdFromLockFile(result.data.INSTALLER_LOCK_FILE);
     if (!resolvedInstanceId) {
       throw new Error(
         "Agent config validation failed:\n" +
-        "  INSTANCE_ID: set INSTANCE_ID or provide INSTALLER_LOCK_FILE with an installed instance",
+          "  INSTANCE_ID: set INSTANCE_ID or provide INSTALLER_LOCK_FILE with an installed instance",
       );
     }
 
     const resolvedPrivateKey =
-      result.data.AGENT_PRIVATE_KEY
-      ?? readPrivateKeyFromPath(result.data.AGENT_PRIVATE_KEY_PATH);
+      result.data.AGENT_PRIVATE_KEY ??
+      readPrivateKeyFromPath(result.data.AGENT_PRIVATE_KEY_PATH);
     if (!resolvedPrivateKey) {
       throw new Error(
         "Agent config validation failed:\n" +
-        "  AGENT_PRIVATE_KEY: set AGENT_PRIVATE_KEY or provide AGENT_PRIVATE_KEY_PATH pointing to the installed instance key",
+          "  AGENT_PRIVATE_KEY: set AGENT_PRIVATE_KEY or provide AGENT_PRIVATE_KEY_PATH pointing to the installed instance key",
       );
     }
 
