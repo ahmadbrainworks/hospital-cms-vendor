@@ -1,4 +1,5 @@
 import { MongoClient } from "mongodb";
+import { getControlPanelConfig } from "@hospital-cms/config";
 import { createLogger } from "@hospital-cms/logger";
 import { ensureControlPanelIndexes } from "./db";
 import { createControlPanelApp } from "./app";
@@ -43,13 +44,10 @@ async function seedInitialAdmin(db: import("mongodb").Db): Promise<void> {
 }
 
 async function main() {
-  const mongoUri = process.env["CONTROL_PANEL_MONGODB_URI"];
-  if (!mongoUri) throw new Error("CONTROL_PANEL_MONGODB_URI is required");
-
-  const vendorPrivateKey = process.env["VENDOR_PRIVATE_KEY"];
-  if (!vendorPrivateKey) throw new Error("VENDOR_PRIVATE_KEY is required");
-
-  const port = parseInt(process.env["CONTROL_PANEL_PORT"] ?? "4000", 10);
+  const config = getControlPanelConfig();
+  const mongoUri = config.CONTROL_PANEL_MONGODB_URI;
+  const vendorPrivateKey = config.VENDOR_PRIVATE_KEY;
+  const port = config.CONTROL_PANEL_PORT;
 
   const client = new MongoClient(mongoUri, { serverSelectionTimeoutMS: 5000 });
   await client.connect();
