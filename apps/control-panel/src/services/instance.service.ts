@@ -21,6 +21,7 @@ export class InstanceService {
   }
 
   async register(data: {
+    instanceId?: string;
     hospitalName: string;
     hospitalSlug: string;
     publicKey: string;
@@ -37,7 +38,7 @@ export class InstanceService {
 
     const now = new Date();
     const record: InstanceRecord = {
-      instanceId: uuidv4(),
+      instanceId: data.instanceId ?? uuidv4(),
       hospitalName: data.hospitalName,
       hospitalSlug: data.hospitalSlug,
       publicKey: data.publicKey,

@@ -57,7 +57,8 @@ async function main() {
 
   await seedInitialAdmin(db);
 
-  const { app, alertEngine, anomalyDetector } = createControlPanelApp(db, vendorPrivateKey);
+  const vendorPublicKey = config.VENDOR_PUBLIC_KEY;
+  const { app, alertEngine, anomalyDetector } = createControlPanelApp(db, vendorPrivateKey, vendorPublicKey);
 
   // Seed default alert rules
   await alertEngine.seedDefaults();

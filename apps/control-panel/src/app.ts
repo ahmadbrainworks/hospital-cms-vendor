@@ -49,6 +49,7 @@ export interface ControlPanelApp {
 export function createControlPanelApp(
   db: Db,
   vendorPrivateKey: string,
+  vendorPublicKey: string,
 ): ControlPanelApp {
   const app = express();
 
@@ -139,14 +140,18 @@ export function createControlPanelApp(
         // Validate + consume the token (throws NotFoundError if invalid/expired)
         await registrationTokenService.consume(regToken);
 
-        const { hospitalName, hospitalSlug, publicKey, agentVersion } = req.body;
+        const { instanceId, hospitalName, hospitalSlug, publicKey, agentVersion } = req.body;
         const instance = await instanceService.register({
+          instanceId,
           hospitalName,
           hospitalSlug,
           publicKey,
           agentVersion,
         });
-        res.status(201).json({ success: true, data: { instance } });
+        res.status(201).json({
+          success: true,
+          data: { instance, vendorPublicKey },
+        });
       } catch (err) {
         next(err);
       }
