@@ -183,6 +183,22 @@ export function createControlPanelApp(
   );
 
     /**
+   * GET /api/registration-tokens — list active (non-expired) tokens.
+   */
+  app.get(
+    "/api/registration-tokens",
+    requireVendorAuthOrStaff,
+    async (_req: Request, res: Response, next: NextFunction) => {
+      try {
+        const tokens = await registrationTokenService.listActive();
+        res.json({ success: true, data: tokens });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  /**
    * POST /api/registration-tokens — vendor issues a new one-time registration
    * token for an upcoming hospital deployment.
    */
@@ -194,6 +210,22 @@ export function createControlPanelApp(
         const { hospitalName } = req.body as { hospitalName?: string };
         const token = await registrationTokenService.issue(hospitalName);
         res.status(201).json({ success: true, data: { token } });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  /**
+   * DELETE /api/registration-tokens/:token — revoke a pending token.
+   */
+  app.delete(
+    "/api/registration-tokens/:token",
+    requireVendorAuthOrStaff,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        await registrationTokenService.revoke(req.params["token"]!);
+        res.json({ success: true });
       } catch (err) {
         next(err);
       }

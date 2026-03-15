@@ -21,6 +21,11 @@ const NAV: NavItem[] = [
     permissions: [P.INSTANCE_VIEW],
   },
   {
+    href: "/registration-tokens",
+    label: "Registration Tokens",
+    permissions: [P.INSTANCE_VIEW],
+  },
+  {
     href: "/licenses",
     label: "Licenses",
     permissions: [P.LICENSE_VIEW],

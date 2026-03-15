@@ -83,4 +83,13 @@ export class RegistrationTokenService {
       .sort({ createdAt: -1 })
       .toArray();
   }
+
+  /** Revoke (delete) a pending token before it is used. */
+  async revoke(token: string): Promise<void> {
+    const result = await this.col().deleteOne({ token });
+    if (result.deletedCount === 0) {
+      throw new NotFoundError("Registration token not found");
+    }
+    logger.info("Registration token revoked");
+  }
 }
