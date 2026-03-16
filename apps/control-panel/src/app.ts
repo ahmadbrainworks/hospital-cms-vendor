@@ -137,10 +137,10 @@ export function createControlPanelApp(
             error: { code: "UNAUTHORIZED", message: "Missing X-Registration-Token header" },
           });
         }
-        // Validate + consume the token (throws NotFoundError if invalid/expired)
-        await registrationTokenService.consume(regToken);
-
         const { instanceId, hospitalName, hospitalSlug, publicKey, agentVersion } = req.body;
+
+        // Validate + consume the token, linking it to this hospital
+        await registrationTokenService.consume(regToken, hospitalName, instanceId);
         const instance = await instanceService.register({
           instanceId,
           hospitalName,
@@ -183,14 +183,18 @@ export function createControlPanelApp(
   );
 
     /**
-   * GET /api/registration-tokens — list active (non-expired) tokens.
+   * GET /api/registration-tokens — list all tokens.
+   * Query param ?active=true returns only unconsumed, non-expired tokens.
    */
   app.get(
     "/api/registration-tokens",
     requireVendorAuthOrStaff,
-    async (_req: Request, res: Response, next: NextFunction) => {
+    async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const tokens = await registrationTokenService.listActive();
+        const activeOnly = req.query["active"] === "true";
+        const tokens = activeOnly
+          ? await registrationTokenService.listActive()
+          : await registrationTokenService.listAll();
         res.json({ success: true, data: tokens });
       } catch (err) {
         next(err);

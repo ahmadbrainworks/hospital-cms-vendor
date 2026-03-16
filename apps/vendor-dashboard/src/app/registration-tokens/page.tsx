@@ -10,6 +10,8 @@ interface RegistrationToken {
   hospitalName?: string;
   createdAt: string;
   expiresAt: string;
+  consumedAt?: string;
+  consumedByInstanceId?: string;
 }
 
 interface TokensResponse {
@@ -140,11 +142,11 @@ export default function RegistrationTokensPage() {
         )}
       </div>
 
-      {/* Active tokens list */}
+      {/* All tokens list */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
           <h2 className="text-sm font-semibold text-gray-700">
-            Active Tokens
+            Registration Tokens
           </h2>
         </div>
 
@@ -162,7 +164,7 @@ export default function RegistrationTokensPage() {
 
         {data && tokens.length === 0 && (
           <div className="px-5 py-8 text-sm text-gray-400 text-center">
-            No active tokens. Generate one above to onboard a new hospital.
+            No tokens yet. Generate one above to onboard a new hospital.
           </div>
         )}
 
@@ -172,44 +174,70 @@ export default function RegistrationTokensPage() {
               <tr className="border-b border-gray-100 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <th className="px-5 py-3">Token</th>
                 <th className="px-5 py-3">Hospital</th>
+                <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3">Created</th>
                 <th className="px-5 py-3">Expires</th>
                 <th className="px-5 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {tokens.map((t) => (
-                <tr key={t.token} className="hover:bg-gray-50">
-                  <td className="px-5 py-3">
-                    <code className="text-xs font-mono text-gray-600">
-                      {t.token.slice(0, 12)}...{t.token.slice(-8)}
-                    </code>
-                    <button
-                      onClick={() => handleCopy(t.token)}
-                      className="ml-2 text-xs text-indigo-600 hover:text-indigo-800"
-                    >
-                      Copy
-                    </button>
-                  </td>
-                  <td className="px-5 py-3 text-gray-700">
-                    {t.hospitalName || "—"}
-                  </td>
-                  <td className="px-5 py-3 text-gray-500">
-                    {new Date(t.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-5 py-3 text-gray-500">
-                    {new Date(t.expiresAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    <button
-                      onClick={() => handleRevoke(t.token)}
-                      className="text-xs text-red-600 hover:text-red-800 font-medium"
-                    >
-                      Revoke
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {tokens.map((t) => {
+                const isConsumed = !!t.consumedAt;
+                const isExpired = !isConsumed && new Date(t.expiresAt) < new Date();
+                return (
+                  <tr key={t.token} className={`hover:bg-gray-50 ${isConsumed || isExpired ? "opacity-60" : ""}`}>
+                    <td className="px-5 py-3">
+                      <code className="text-xs font-mono text-gray-600">
+                        {t.token.slice(0, 12)}...{t.token.slice(-8)}
+                      </code>
+                      {!isConsumed && (
+                        <button
+                          onClick={() => handleCopy(t.token)}
+                          className="ml-2 text-xs text-indigo-600 hover:text-indigo-800"
+                        >
+                          Copy
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-gray-700">
+                      {t.hospitalName || "—"}
+                    </td>
+                    <td className="px-5 py-3">
+                      {isConsumed ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          Used
+                        </span>
+                      ) : isExpired ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                          Expired
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          Active
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-gray-500">
+                      {new Date(t.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-3 text-gray-500">
+                      {isConsumed
+                        ? new Date(t.consumedAt!).toLocaleDateString()
+                        : new Date(t.expiresAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      {!isConsumed && !isExpired && (
+                        <button
+                          onClick={() => handleRevoke(t.token)}
+                          className="text-xs text-red-600 hover:text-red-800 font-medium"
+                        >
+                          Revoke
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

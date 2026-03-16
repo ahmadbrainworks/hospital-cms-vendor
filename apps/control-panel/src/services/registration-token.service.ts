@@ -22,6 +22,8 @@ interface RegistrationTokenRecord {
   hospitalName?: string;
   createdAt: Date;
   expiresAt: Date;
+  consumedAt?: Date;
+  consumedByInstanceId?: string;
 }
 
 export class RegistrationTokenService {
@@ -48,18 +50,37 @@ export class RegistrationTokenService {
   }
 
   /**
-   * Consume a token — validates, then deletes it (single-use).
-   * Throws NotFoundError if the token is missing or expired.
+   * Consume a token — validates, then marks it as consumed (single-use).
+   * The hospital name and instance ID are stored so consumed tokens
+   * can be displayed alongside their linked hospital.
+   * Throws NotFoundError if the token is missing, expired, or already consumed.
    */
-  async consume(token: string): Promise<void> {
-    const record = await this.col().findOneAndDelete({ token });
+  async consume(
+    token: string,
+    hospitalName?: string,
+    instanceId?: string,
+  ): Promise<void> {
+    const record = await this.col().findOne({ token });
     if (!record) {
       throw new NotFoundError("Registration token not found or already used");
+    }
+    if (record.consumedAt) {
+      throw new NotFoundError("Registration token has already been used");
     }
     if (new Date() > record.expiresAt) {
       throw new NotFoundError("Registration token has expired");
     }
-    logger.info({ hospitalName: record.hospitalName }, "Registration token consumed");
+    await this.col().updateOne(
+      { token },
+      {
+        $set: {
+          consumedAt: new Date(),
+          ...(hospitalName ? { hospitalName } : {}),
+          ...(instanceId ? { consumedByInstanceId: instanceId } : {}),
+        },
+      },
+    );
+    logger.info({ hospitalName, instanceId }, "Registration token consumed");
   }
 
   /**
@@ -77,9 +98,18 @@ export class RegistrationTokenService {
     return { hospitalName: record.hospitalName };
   }
 
+  /** List tokens that have not been consumed and have not expired. */
   async listActive(): Promise<RegistrationTokenRecord[]> {
     return this.col()
-      .find({ expiresAt: { $gt: new Date() } })
+      .find({ consumedAt: { $exists: false }, expiresAt: { $gt: new Date() } })
+      .sort({ createdAt: -1 })
+      .toArray();
+  }
+
+  /** List all tokens (active, consumed, and expired). */
+  async listAll(): Promise<RegistrationTokenRecord[]> {
+    return this.col()
+      .find({})
       .sort({ createdAt: -1 })
       .toArray();
   }

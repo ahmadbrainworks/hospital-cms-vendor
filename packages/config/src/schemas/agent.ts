@@ -4,7 +4,7 @@ import { z } from "zod";
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("production"),
   CONTROL_PANEL_URL: z.string().url(),
-  INSTANCE_ID: z.string().optional(), //uuid().optional(),
+  INSTANCE_ID: z.string().uuid().optional(),
   /** RSA-4096 instance private key (PEM) — signs heartbeat payloads */
   AGENT_PRIVATE_KEY: z.string().min(100).optional(),
   /** RSA-4096 vendor public key (PEM) — verifies signed commands/licenses */
