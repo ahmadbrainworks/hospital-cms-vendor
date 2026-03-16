@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { cpApi } from "../../lib/api";
+import { cpApi, ApiError } from "../../lib/api";
 import { Shell } from "../../components/Shell";
 import Link from "next/link";
 
@@ -53,7 +53,7 @@ function MetricBar({ value, warn = 80, danger = 90 }: { value?: number; warn?: n
 }
 
 export default function InstancesPage() {
-  const { data, error, isLoading } = useSWR<InstancesResponse>(
+  const { data, error, isLoading, mutate } = useSWR<InstancesResponse>(
     "/api/vendor/instances",
     (path: string): Promise<any> => cpApi.get(path),
     { refreshInterval: 30_000 },
@@ -61,6 +61,16 @@ export default function InstancesPage() {
   const instances = Array.isArray(data?.data)
     ? data.data
     : data?.data.instances ?? [];
+
+  const handleDelete = async (instanceId: string, name: string) => {
+    if (!confirm(`Delete "${name}"? This will permanently remove the instance and all its licenses, commands, and data.`)) return;
+    try {
+      await cpApi.delete(`/api/vendor/instances/${instanceId}`);
+      mutate();
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Failed to delete instance.");
+    }
+  };
 
   return (
     <Shell>
@@ -115,12 +125,20 @@ export default function InstancesPage() {
                       : "—"}
                   </td>
                   <td className="px-4 py-3">
-                    <Link
-                      href={`/instances/${inst.instanceId}`}
-                      className="text-indigo-600 hover:text-indigo-800 font-medium text-xs"
-                    >
-                      Manage →
-                    </Link>
+                    <div className="flex items-center gap-3 justify-end">
+                      <Link
+                        href={`/instances/${inst.instanceId}`}
+                        className="text-indigo-600 hover:text-indigo-800 font-medium text-xs"
+                      >
+                        Manage
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(inst.instanceId, inst.hospitalName)}
+                        className="text-red-600 hover:text-red-800 font-medium text-xs"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

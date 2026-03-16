@@ -273,6 +273,32 @@ export class InstanceService {
   }
 
   /**
+   * Delete an instance and all associated data (licenses, assignments, commands, desired state).
+   */
+  async delete(instanceId: string): Promise<void> {
+    const instance = await this.getByInstanceId(instanceId);
+
+    await Promise.all([
+      this.col().deleteOne({ instanceId }),
+      this.db.collection(CP_COLLECTIONS.LICENSES).deleteMany({ instanceId }),
+      this.db.collection(CP_COLLECTIONS.COMMANDS).deleteMany({ instanceId }),
+      this.db.collection(CP_COLLECTIONS.METRICS_HISTORY).deleteMany({ instanceId }),
+      this.db.collection(CP_COLLECTIONS.HEARTBEAT_NONCES).deleteMany({ instanceId }),
+      this.db.collection(CP_COLLECTIONS.PACKAGE_ASSIGNMENTS).deleteMany({ instanceId }),
+      this.db.collection(CP_COLLECTIONS.DESIRED_STATES).deleteMany({ instanceId }),
+      this.db.collection(CP_COLLECTIONS.RECONCILIATION_HISTORY).deleteMany({ instanceId }),
+      this.db.collection(CP_COLLECTIONS.TELEMETRY_EVENTS).deleteMany({ instanceId }),
+      this.db.collection(CP_COLLECTIONS.ALERTS).deleteMany({ instanceId }),
+    ]);
+
+    this.audit.log("instance.deleted", {
+      instanceId,
+      hospitalName: instance.hospitalName,
+    }, instanceId);
+    logger.info({ instanceId, hospitalName: instance.hospitalName }, "Instance deleted");
+  }
+
+  /**
    * Rotate an instance's public key.
    * The old key is kept for a 24-hour grace period.
    */

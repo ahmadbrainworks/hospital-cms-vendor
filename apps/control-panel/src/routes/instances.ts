@@ -143,6 +143,19 @@ export function createInstancesRouter(
     },
   );
 
+  // DELETE /instances/:instanceId — delete instance and all associated data
+  router.delete(
+    "/:instanceId",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        await instanceService.delete(req.params["instanceId"]!);
+        res.json({ success: true, data: null });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
   // GET /instances/:instanceId/commands — list commands
   router.get(
     "/:instanceId/commands",

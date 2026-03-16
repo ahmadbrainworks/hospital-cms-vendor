@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import Link from "next/link";
 import { cpApi, ApiError } from "../../../lib/api";
@@ -73,6 +73,7 @@ export default function InstanceDetailPage() {
     { refreshInterval: 15_000 },
   );
 
+  const router = useRouter();
   const { hasPermission } = useAuth();
 
   const { data: assignmentsData } = useSWR(
@@ -86,6 +87,19 @@ export default function InstanceDetailPage() {
   const [cmdPayload, setCmdPayload] = useState("{}");
   const [cmdLoading, setCmdLoading] = useState(false);
   const [cmdMsg, setCmdMsg] = useState("");
+
+  const [deleting, setDeleting] = useState(false);
+  const handleDelete = async () => {
+    if (!confirm(`Delete "${inst?.hospitalName ?? instanceId}"? This will permanently remove the instance and all its licenses, commands, and data.`)) return;
+    setDeleting(true);
+    try {
+      await cpApi.delete(`/api/vendor/instances/${instanceId}`);
+      router.push("/instances");
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Failed to delete instance.");
+      setDeleting(false);
+    }
+  };
 
   const [removingPkg, setRemovingPkg] = useState<string | null>(null);
   const handleRemoveAssignment = async (packageId: string) => {
@@ -140,11 +154,20 @@ export default function InstanceDetailPage() {
           <p className="text-sm text-gray-500 mt-0.5">Instance ID: {instanceId}</p>
         </div>
         {inst && (
-          <span className={`ml-auto inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            inst.status === "ACTIVE" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
-          }`}>
-            {inst.status}
-          </span>
+          <div className="ml-auto flex items-center gap-3">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              inst.status === "ACTIVE" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
+            }`}>
+              {inst.status}
+            </span>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 disabled:opacity-50 transition-colors"
+            >
+              {deleting ? "Deleting..." : "Delete Instance"}
+            </button>
+          </div>
         )}
       </div>
 

@@ -75,6 +75,16 @@ export class LicenseService {
     tier: LicenseRecord["tier"],
     validDays: number,
   ): Promise<LicenseRecord> {
+    // Verify the instance is registered
+    const instance = await this.db
+      .collection(CP_COLLECTIONS.INSTANCES)
+      .findOne({ instanceId });
+    if (!instance) {
+      throw new NotFoundError(
+        `Instance '${instanceId}' is not registered. Instances must complete the CMS installer first.`,
+      );
+    }
+
     // Revoke any existing active license for this instance
     const existing = await this.col().findOne({ instanceId, revokedAt: null });
     if (existing) {
