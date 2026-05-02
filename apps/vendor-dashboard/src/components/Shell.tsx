@@ -16,6 +16,11 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: "/overview", label: "Overview" },
   {
+    href: "/monitoring",
+    label: "Monitoring",
+    permissions: [P.INSTANCE_VIEW],
+  },
+  {
     href: "/instances",
     label: "Instances",
     permissions: [P.INSTANCE_VIEW],

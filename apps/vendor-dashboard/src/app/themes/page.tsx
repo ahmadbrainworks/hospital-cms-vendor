@@ -123,13 +123,25 @@ export default function ThemeBuilderPage() {
     setPublishError("");
     setPublishSuccess(false);
     try {
-      // Build variables array from CSS preview
+      // Build CSS variables mapping
+      const cssVariables: Record<string, string> = {};
       const variables: Array<{ key: string; value: string }> = [];
+
       for (const [role, scale] of Object.entries(scales)) {
         for (const [shade, hex] of Object.entries(scale)) {
-          variables.push({ key: `--color-${role}-${shade}`, value: hex as string });
+          const key = `--color-${role}-${shade}`;
+          cssVariables[key] = hex as string;
+          variables.push({ key, value: hex as string });
         }
       }
+      cssVariables["--color-bg"] = colors.background!;
+      cssVariables["--color-surface"] = colors.surface!;
+      cssVariables["--color-text"] = colors.text!;
+      cssVariables["--color-border"] = colors.border!;
+      cssVariables["--font-family"] = fontFamily;
+      cssVariables["--font-size-base"] = `${fontSize}px`;
+      cssVariables["--radius-md"] = `${radiusMd}px`;
+
       variables.push({ key: "--color-bg", value: colors.background! });
       variables.push({ key: "--color-surface", value: colors.surface! });
       variables.push({ key: "--color-text", value: colors.text! });
@@ -138,6 +150,59 @@ export default function ThemeBuilderPage() {
       variables.push({ key: "--font-size-base", value: `${fontSize}px` });
       variables.push({ key: "--radius-md", value: `${radiusMd}px` });
 
+      // Build DesignTokens
+      const designTokens = {
+        colors: {
+          primary: scales.primary || {},
+          secondary: scales.secondary || {},
+          accent: scales.accent || {},
+          neutral: scales.neutral || {},
+          success: scales.success || {},
+          warning: scales.warning || {},
+          error: scales.error || {},
+          info: scales.primary || {}, // Use primary as info fallback
+          background: colors.background,
+          surface: colors.surface,
+          surfaceRaised: colors.surface,
+          textPrimary: colors.text,
+          textSecondary: "#64748b",
+          textDisabled: "#94a3b8",
+          textInverse: "#ffffff",
+          border: colors.border,
+          borderStrong: "#cbd5e1",
+        },
+        typography: {
+          fontFamily,
+          baseFontSize: fontSize,
+          lineHeight: 1.5,
+          scaleRatio: 1.25,
+        },
+        spacing: {
+          baseUnit: 4,
+        },
+        border: {
+          radiusSm: Math.max(radiusMd - 2, 4),
+          radiusMd,
+          radiusLg: radiusMd + 4,
+          radiusFull: 9999,
+          borderWidth: 1,
+        },
+        shadows: {
+          sm: { value: "0 1px 2px 0 rgb(0 0 0 / 0.05)" },
+          md: { value: "0 4px 6px -1px rgb(0 0 0 / 0.1)" },
+          lg: { value: "0 10px 15px -3px rgb(0 0 0 / 0.1)" },
+          xl: { value: "0 20px 25px -5px rgb(0 0 0 / 0.1)" },
+        },
+      };
+
+      // Compute SHA-256 checksum
+      const tokenString = JSON.stringify(designTokens, null, 0);
+      const encoder = new TextEncoder();
+      const data = encoder.encode(tokenString);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const checksum = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
       const manifest: Record<string, unknown> = {
         packageId: themeId.trim(),
         type: "theme",
@@ -145,7 +210,7 @@ export default function ThemeBuilderPage() {
         name: themeName.trim(),
         description: `Theme: ${themeName.trim()}`,
         author: "Vendor Team",
-        checksum: "pending",
+        checksum,
         size: 0,
         downloadUrl: "",
         publishedAt: new Date().toISOString(),
@@ -154,9 +219,9 @@ export default function ThemeBuilderPage() {
           requiredLicenseTiers: [],
           requiredFeatures: [],
         },
-        tokens: {},
-        cssVariablesDaisyui: {},
-        cssVariablesShadcn: {},
+        tokens: designTokens,
+        cssVariablesDaisyui: cssVariables,
+        cssVariablesShadcn: cssVariables,
         variables,
       };
 
