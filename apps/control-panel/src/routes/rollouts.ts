@@ -18,7 +18,7 @@ const CreateRolloutSchema = z.object({
 });
 
 export function createRolloutsRouter(rolloutService: RolloutService): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // GET / — list rollouts
   router.get(

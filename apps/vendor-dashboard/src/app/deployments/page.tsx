@@ -12,6 +12,7 @@ import {
   Alert,
   Topbar,
   Skeleton,
+  SkeletonGroup,
   Dropdown,
 } from "@/components/ui";
 import { Search, Eye, RotateCw, MoreVertical } from "lucide-react";
@@ -212,7 +213,7 @@ export default function DeploymentsPage() {
         {loading ? (
           <Card>
             <CardContent className="pt-6">
-              <Skeleton count={5} />
+              <SkeletonGroup count={5} />
             </CardContent>
           </Card>
         ) : filteredDeployments.length > 0 ? (

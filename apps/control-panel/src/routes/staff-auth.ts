@@ -34,7 +34,7 @@ export function createStaffAuthRouter(
   authService: StaffAuthService,
   staffService: StaffService,
 ): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // Strict rate limit on login attempts
   const loginLimiter = rateLimit({

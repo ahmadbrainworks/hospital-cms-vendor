@@ -13,6 +13,7 @@ interface AlertProps {
   icon?: ReactNode;
   onClose?: () => void;
   dismissible?: boolean;
+  className?: string;
 }
 
 const variantStyles = {
@@ -36,12 +37,14 @@ export function Alert({
   icon,
   onClose,
   dismissible = false,
+  className,
 }: AlertProps) {
   return (
     <div
       className={cx(
         "rounded-lg border p-4 animate-slide-down transition-motion",
-        variantStyles[variant]
+        variantStyles[variant],
+        className
       )}
       role="alert"
     >

@@ -32,7 +32,7 @@ const QuerySchema = z.object({
 export function createTelemetryRouter(
   telemetryService: TelemetryService,
 ): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // POST /ingest — agent pushes a batch of events
   router.post(

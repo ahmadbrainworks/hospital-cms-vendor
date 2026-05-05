@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 
-const router = Router();
+const router: Router = Router();
 
 // GET /api/stats/dashboard - Get vendor dashboard statistics
 router.get("/dashboard", (req: Request, res: Response) => {

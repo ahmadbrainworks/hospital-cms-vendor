@@ -22,7 +22,7 @@ const publishSchema = z.object({
 export function createDesiredStateRouter(
   desiredStateService: DesiredStateService,
 ): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // GET /api/vendor/desired-state — list all instance desired states
   router.get("/", async (_req: Request, res: Response, next: NextFunction) => {

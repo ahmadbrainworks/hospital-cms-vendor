@@ -13,6 +13,7 @@ import {
   Alert,
   Topbar,
   Skeleton,
+  SkeletonGroup,
   Dropdown,
 } from "@/components/ui";
 import { Search, Eye, Settings, Trash2, MoreVertical } from "lucide-react";
@@ -183,7 +184,7 @@ export default function HospitalsPage() {
         {loading ? (
           <Card>
             <CardContent className="pt-6">
-              <Skeleton count={5} />
+              <SkeletonGroup count={5} />
             </CardContent>
           </Card>
         ) : filteredHospitals.length > 0 ? (

@@ -40,20 +40,24 @@ interface SkeletonGroupProps {
   count?: number;
   className?: string;
   children?: (index: number) => React.ReactNode;
+  layout?: "vertical" | "horizontal";
 }
 
 export function SkeletonGroup({
   count = 3,
   className,
   children,
+  layout = "vertical",
 }: SkeletonGroupProps) {
+  const layoutClass = layout === "horizontal" ? "flex gap-4" : "space-y-3";
+
   return (
-    <div className={cx("space-y-3", className)}>
+    <div className={cx(layoutClass, className)}>
       {Array.from({ length: count }).map((_, i) =>
         children ? (
           <div key={i}>{children(i)}</div>
         ) : (
-          <Skeleton key={i} />
+          <Skeleton key={i} className={layout === "horizontal" ? "flex-1" : ""} />
         )
       )}
     </div>

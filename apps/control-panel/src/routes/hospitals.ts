@@ -4,13 +4,13 @@ import { CP_COLLECTIONS } from "../db";
 import type { InstanceRecord, LicenseRecord } from "../types";
 
 export function createHospitalsRouter(db: Db): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // GET /api/hospitals - List hospitals with license and heartbeat info
   router.get("/", async (req: Request, res: Response) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 50;
-      const offset = parseInt(req.query.offset as string) || 0;
+      const limit = parseInt(req.query["limit"] as string) || 50;
+      const offset = parseInt(req.query["offset"] as string) || 0;
 
       const instancesCol = db.collection<InstanceRecord>(CP_COLLECTIONS.INSTANCES);
       const licensesCol = db.collection<LicenseRecord>(CP_COLLECTIONS.LICENSES);
@@ -77,7 +77,7 @@ export function createHospitalsRouter(db: Db): Router {
       const licensesCol = db.collection<LicenseRecord>(CP_COLLECTIONS.LICENSES);
       const assignmentsCol = db.collection(CP_COLLECTIONS.PACKAGE_ASSIGNMENTS);
 
-      const instance = await instancesCol.findOne({ instanceId: req.params.id });
+      const instance = await instancesCol.findOne({ instanceId: req.params["id"] });
 
       if (!instance) {
         return res.status(404).json({ error: "Hospital not found" });
@@ -118,7 +118,7 @@ export function createHospitalsRouter(db: Db): Router {
       const assignmentsCol = db.collection(CP_COLLECTIONS.PACKAGE_ASSIGNMENTS);
 
       const instance = await instancesCol.findOne({
-        instanceId: req.params.id,
+        instanceId: req.params["id"],
       });
 
       if (!instance) {
@@ -144,7 +144,7 @@ export function createHospitalsRouter(db: Db): Router {
       const instancesCol = db.collection<InstanceRecord>(CP_COLLECTIONS.INSTANCES);
 
       const instance = await instancesCol.findOne({
-        instanceId: req.params.id,
+        instanceId: req.params["id"],
       });
 
       if (!instance) {

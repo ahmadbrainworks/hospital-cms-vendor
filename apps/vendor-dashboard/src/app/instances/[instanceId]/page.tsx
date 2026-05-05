@@ -16,7 +16,14 @@ interface InstanceDetail {
   status: string;
   tier: string;
   lastHeartbeat?: string;
-  metrics?: Record<string, unknown>;
+  metrics?: {
+    cpuPercent?: number;
+    memoryPercent?: number;
+    diskPercent?: number;
+    uptimeSeconds?: number;
+    activeEncounters?: number;
+    totalPatients?: number;
+  };
   desiredState?: {
     plugins: unknown[];
     themeId?: string;

@@ -5,7 +5,7 @@ import { Shell } from "@/components/Shell";
 import {
   Download,
   Trash2,
-  Toggle2,
+  ToggleLeft,
 } from "lucide-react";
 import {
   SAMPLE_PLUGINS,
@@ -131,7 +131,7 @@ export default function PluginsPage() {
                           installed_plugin?.enabled ? "Disable" : "Enable"
                         }
                       >
-                        <Toggle2 size={18} />
+                        <ToggleLeft size={18} />
                       </button>
                       <button
                         onClick={() => handleUninstall(plugin.id)}

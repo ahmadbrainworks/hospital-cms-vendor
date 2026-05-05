@@ -13,6 +13,7 @@ import {
   Alert,
   Topbar,
   Skeleton,
+  SkeletonGroup,
   Dropdown,
 } from "@/components/ui";
 import { Search, Eye, Download, Copy, MoreVertical, Plus } from "lucide-react";
@@ -199,7 +200,7 @@ export default function PackagesPage() {
         {loading ? (
           <Card>
             <CardContent className="pt-6">
-              <Skeleton count={5} />
+              <SkeletonGroup count={5} />
             </CardContent>
           </Card>
         ) : filteredPackages.length > 0 ? (

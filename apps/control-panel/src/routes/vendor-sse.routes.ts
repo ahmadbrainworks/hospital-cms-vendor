@@ -7,7 +7,7 @@ import { createTicket, consumeTicket } from "../modules/sse/vendor-sse-ticket-st
 import { requireVendorAuth } from "../middleware/vendor-auth";
 
 export function vendorSseRouter(): Router {
-  const router = Router();
+  const router: Router = Router();
 
   /**
    * POST /api/vendor/sse/ticket
@@ -33,7 +33,7 @@ export function vendorSseRouter(): Router {
    */
   router.get("/", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const ticket = req.query.ticket as string | undefined;
+      const ticket = req.query["ticket"] as string | undefined;
 
       if (!ticket) {
         return res.status(400).json({ error: "ticket query param required" });

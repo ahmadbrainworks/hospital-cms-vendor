@@ -86,7 +86,7 @@ export const badgeVariants = {
 /**
  * Compose class names with transitions
  */
-export const cx = (...classes: (string | undefined | false)[]) =>
+export const cx = (...classes: (string | undefined | false | null)[]) =>
   classes.filter(Boolean).join(" ");
 
 /**

@@ -14,7 +14,7 @@ import { VendorPermission } from "../types/vendor-auth";
 export function createStaffAuditRouter(
   auditService: StaffAuditService,
 ): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // All audit routes require auth + audit:view
   router.use(requireStaffAuth);

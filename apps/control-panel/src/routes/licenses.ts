@@ -14,7 +14,7 @@ const RevokeSchema = z.object({
 });
 
 export function createLicensesRouter(licenseService: LicenseService): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // GET /licenses — list all licenses
   router.get("/", async (_req: Request, res: Response, next: NextFunction) => {

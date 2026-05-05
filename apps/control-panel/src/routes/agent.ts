@@ -140,7 +140,7 @@ export function createAgentRouter(
   packageAssignmentService: PackageAssignmentService,
   packageRegistryService: PackageRegistryService,
 ): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // POST /agent/heartbeat — main agent check-in
   router.post(
@@ -197,7 +197,7 @@ export function createAgentRouter(
               ? {
                   tier: license.tier,
                   features: license.features,
-                  maxBeds: license.maxBeds,
+                  limits: license.limits,
                   expiresAt: license.expiresAt,
                   issuedAt: license.issuedAt,
                   signature: license.signature,

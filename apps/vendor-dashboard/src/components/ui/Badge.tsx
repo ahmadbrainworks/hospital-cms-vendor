@@ -10,6 +10,7 @@ interface BadgeProps {
   variant?: BadgeVariant;
   pulse?: boolean;
   size?: "sm" | "md";
+  className?: string;
 }
 
 const sizeClasses = {
@@ -22,6 +23,7 @@ export function Badge({
   variant = "default",
   pulse = false,
   size = "sm",
+  className,
 }: BadgeProps) {
   return (
     <span
@@ -29,7 +31,8 @@ export function Badge({
         badgeVariants[variant],
         sizeClasses[size],
         "inline-flex items-center gap-2 transition-micro",
-        pulse && "relative"
+        pulse && "relative",
+        className
       )}
     >
       {pulse && (

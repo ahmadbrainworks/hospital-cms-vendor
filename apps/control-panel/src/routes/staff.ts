@@ -34,7 +34,7 @@ const ResetPasswordSchema = z.object({
 });
 
 export function createStaffRouter(staffService: StaffService): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // All staff routes require authentication
   router.use(requireStaffAuth);

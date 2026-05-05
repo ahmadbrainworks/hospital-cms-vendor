@@ -72,3 +72,7 @@ export function requireVendorApiKey(
 
   next();
 }
+
+export function requireVendorAuth() {
+  return requireVendorApiKey;
+}

@@ -35,7 +35,7 @@ const UpdateVersionSchema = z.object({
 export function createPackageAssignmentsRouter(
   assignmentService: PackageAssignmentService,
 ): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // All routes require staff auth
   router.use(requireStaffAuth);

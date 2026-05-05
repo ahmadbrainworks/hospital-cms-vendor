@@ -13,7 +13,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   fullWidth?: boolean;
   icon?: ReactNode;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 export function Button({
@@ -28,7 +28,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "inline-flex items-center justify-center font-medium transition-micro outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary-500 focus-visible:ring-offset-neutral-900 active:scale-95";
+    "inline-flex items-center justify-center font-medium transition-micro outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-blue-500 focus-visible:ring-offset-neutral-900 active:scale-95";
 
   const sizeStyle = buttonSizes[size];
   const variantStyle = buttonVariants[variant];

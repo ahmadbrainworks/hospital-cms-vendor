@@ -57,13 +57,15 @@ export class LicenseService {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + validDays * 24 * 60 * 60 * 1000);
     const licenseId = uuidv4();
+    const limits = TIER_DEFAULT_LIMITS[tier];
 
     const licensePayload = {
       licenseId,
       instanceId,
       tier,
       features: TIER_DEFAULT_FEATURES[tier],
-      limits: TIER_DEFAULT_LIMITS[tier],
+      maxUsers: limits.maxUsers,
+      maxBeds: limits.maxBeds,
       issuedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
     };
@@ -72,6 +74,7 @@ export class LicenseService {
 
     const record: LicenseRecord = {
       ...licensePayload,
+      limits,
       issuedAt: now,
       expiresAt,
       signature,

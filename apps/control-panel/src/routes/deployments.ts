@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 
-const router = Router();
+const router: Router = Router();
 
 // Mock deployments database
 const deploymentsDb: Record<string, any> = {
@@ -64,9 +64,9 @@ const deploymentsDb: Record<string, any> = {
 // GET /api/deployments - List deployments
 router.get("/", (req: Request, res: Response) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 200;
-    const offset = parseInt(req.query.offset as string) || 0;
-    const status = req.query.status as string;
+    const limit = parseInt(req.query["limit"] as string) || 200;
+    const offset = parseInt(req.query["offset"] as string) || 0;
+    const status = req.query["status"] as string;
 
     let deployments = Object.values(deploymentsDb);
 
@@ -90,7 +90,7 @@ router.get("/", (req: Request, res: Response) => {
 // GET /api/deployments/:id - Get deployment details
 router.get("/:id", (req: Request, res: Response) => {
   try {
-    const deployment = deploymentsDb[req.params.id];
+    const deployment = deploymentsDb[req.params["id"]!];
 
     if (!deployment) {
       return res.status(404).json({ error: "Deployment not found" });
@@ -105,7 +105,7 @@ router.get("/:id", (req: Request, res: Response) => {
 // POST /api/deployments/:id/retry - Retry failed deployment
 router.post("/:id/retry", (req: Request, res: Response) => {
   try {
-    const deployment = deploymentsDb[req.params.id];
+    const deployment = deploymentsDb[req.params["id"]!];
 
     if (!deployment) {
       return res.status(404).json({ error: "Deployment not found" });
@@ -117,7 +117,7 @@ router.post("/:id/retry", (req: Request, res: Response) => {
       startedAt: new Date().toISOString(),
     };
 
-    deploymentsDb[req.params.id] = retried;
+    deploymentsDb[req.params["id"]!] = retried;
 
     res.json({
       data: retried,

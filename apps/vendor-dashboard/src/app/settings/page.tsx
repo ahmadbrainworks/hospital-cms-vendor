@@ -14,6 +14,7 @@ import {
   Tabs,
   Badge,
   Skeleton,
+  SkeletonGroup,
 } from "@/components/ui";
 import { Copy, Eye, EyeOff, Trash2, Plus } from "lucide-react";
 
@@ -127,7 +128,7 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-neutral-900">
         <Topbar title="Settings" subtitle="Manage account & preferences" sticky />
         <div className="p-8 max-w-7xl mx-auto">
-          <Skeleton count={3} />
+          <SkeletonGroup count={3} />
         </div>
       </div>
     );

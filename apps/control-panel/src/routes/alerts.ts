@@ -19,7 +19,7 @@ const CreateRuleSchema = z.object({
 });
 
 export function createAlertsRouter(alertEngine: AlertEngineService): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // GET /alerts — list alerts
   router.get(

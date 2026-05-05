@@ -29,9 +29,9 @@ export function Input({
     inputStyles.focus,
     inputStyles.disabled,
     inputStyles.transition,
-    error ? inputStyles.error : success && inputStyles.success,
-    icon && "pl-12",
-    className
+    error ? inputStyles.error : (success ? inputStyles.success : undefined),
+    icon ? "pl-12" : undefined,
+    className as string | undefined
   );
 
   return (

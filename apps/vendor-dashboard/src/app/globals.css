@@ -314,7 +314,7 @@
 
   /* Focus ring utilities */
   .focus-ring {
-    @apply focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-primary-500 focus-visible:ring-offset-neutral-900;
+    @apply focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-blue-500 focus-visible:ring-offset-slate-900;
   }
 
   /* Reduced motion support */

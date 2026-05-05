@@ -194,7 +194,7 @@ export default function VendorDashboard() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <Skeleton count={5} />
+              <SkeletonGroup count={5} />
             ) : (
               <Tabs tabs={tabsContent}>
                 {(tabId) => {

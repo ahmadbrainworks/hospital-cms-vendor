@@ -48,7 +48,7 @@ export function createInstancesRouter(
   licenseService: LicenseService,
   commandService: CommandService,
 ): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // POST /instances — register new instance (called by installer)
   router.post("/", async (req: Request, res: Response, next: NextFunction) => {

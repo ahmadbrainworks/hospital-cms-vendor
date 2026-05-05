@@ -19,7 +19,7 @@ const CreateFlagSchema = z.object({
 });
 
 export function createFeatureFlagsRouter(featureFlagService: FeatureFlagService): Router {
-  const router = Router();
+  const router: Router = Router();
 
   // GET / — list all flags
   router.get(
