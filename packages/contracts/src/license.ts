@@ -9,6 +9,109 @@
 
 export type LicenseTier = "community" | "professional" | "enterprise";
 
+// Feature flag strings
+export const FEATURE_FLAGS = {
+  // Community tier features
+  PATIENTS: "patients",
+  ENCOUNTERS: "encounters",
+  BILLING: "billing",
+  LAB: "lab",
+  PHARMACY: "pharmacy",
+  REPORTS: "reports",
+
+  // Professional tier features
+  APPOINTMENTS: "appointments",
+  SCHEDULING: "scheduling",
+  STAFF_HIERARCHY: "staff_hierarchy",
+  PLUGIN_RUNTIME: "plugin_runtime",
+  WORKFLOW_ENGINE: "workflow_engine",
+  THEME_ENGINE: "theme_engine",
+
+  // Enterprise tier features
+  FHIR_EXPORT: "fhir_export",
+  ADVANCED_REPORTS: "advanced_reports",
+  CUSTOM_PLUGINS: "custom_plugins",
+  ANALYTICS_EXPORT: "analytics_export",
+} as const;
+
+// Tier-to-features mapping
+export const TIER_DEFAULT_FEATURES: Record<LicenseTier, string[]> = {
+  community: [
+    FEATURE_FLAGS.PATIENTS,
+    FEATURE_FLAGS.ENCOUNTERS,
+    FEATURE_FLAGS.BILLING,
+    FEATURE_FLAGS.LAB,
+    FEATURE_FLAGS.PHARMACY,
+    FEATURE_FLAGS.REPORTS,
+  ],
+  professional: [
+    // Community features
+    FEATURE_FLAGS.PATIENTS,
+    FEATURE_FLAGS.ENCOUNTERS,
+    FEATURE_FLAGS.BILLING,
+    FEATURE_FLAGS.LAB,
+    FEATURE_FLAGS.PHARMACY,
+    FEATURE_FLAGS.REPORTS,
+    // Professional features
+    FEATURE_FLAGS.APPOINTMENTS,
+    FEATURE_FLAGS.SCHEDULING,
+    FEATURE_FLAGS.STAFF_HIERARCHY,
+    FEATURE_FLAGS.PLUGIN_RUNTIME,
+    FEATURE_FLAGS.WORKFLOW_ENGINE,
+    FEATURE_FLAGS.THEME_ENGINE,
+  ],
+  enterprise: [
+    // Community + Professional features
+    FEATURE_FLAGS.PATIENTS,
+    FEATURE_FLAGS.ENCOUNTERS,
+    FEATURE_FLAGS.BILLING,
+    FEATURE_FLAGS.LAB,
+    FEATURE_FLAGS.PHARMACY,
+    FEATURE_FLAGS.REPORTS,
+    FEATURE_FLAGS.APPOINTMENTS,
+    FEATURE_FLAGS.SCHEDULING,
+    FEATURE_FLAGS.STAFF_HIERARCHY,
+    FEATURE_FLAGS.PLUGIN_RUNTIME,
+    FEATURE_FLAGS.WORKFLOW_ENGINE,
+    FEATURE_FLAGS.THEME_ENGINE,
+    // Enterprise features
+    FEATURE_FLAGS.FHIR_EXPORT,
+    FEATURE_FLAGS.ADVANCED_REPORTS,
+    FEATURE_FLAGS.CUSTOM_PLUGINS,
+    FEATURE_FLAGS.ANALYTICS_EXPORT,
+  ],
+};
+
+export interface PlanLimits {
+  maxUsers: number;
+  maxBeds: number;
+  maxDepartments: number;
+  maxStaff: number;
+  maxAppointmentsPerDay?: number;
+}
+
+// Tier-to-limits mapping
+export const TIER_DEFAULT_LIMITS: Record<LicenseTier, PlanLimits> = {
+  community: {
+    maxUsers: 10,
+    maxBeds: 50,
+    maxDepartments: 3,
+    maxStaff: 20,
+  },
+  professional: {
+    maxUsers: 50,
+    maxBeds: 200,
+    maxDepartments: 10,
+    maxStaff: 100,
+  },
+  enterprise: {
+    maxUsers: Infinity,
+    maxBeds: Infinity,
+    maxDepartments: Infinity,
+    maxStaff: Infinity,
+  },
+};
+
 export type LicenseLeaseStatus = "active" | "restricted" | "suspended" | "revoked";
 
 /**
@@ -20,8 +123,7 @@ export interface LicenseTokenPayload {
   instanceId: string;
   tier: LicenseTier;
   features: string[];
-  maxUsers: number;
-  maxBeds: number;
+  limits: PlanLimits;
   issuedAt: string;   // ISO-8601
   expiresAt: string;  // ISO-8601
 }
@@ -38,7 +140,7 @@ export interface LicenseLeaseDocument {
   instanceId: string;
   tier: string;
   features: string[];
-  maxBeds: number;
+  limits: PlanLimits;
   /** ISO-8601 — when the lease expires (typically 2-4 hours from issuance) */
   expiresAt: string;
   /** ISO-8601 — when the underlying license token was issued by vendor */
@@ -58,10 +160,10 @@ export interface LicenseLeaseDocument {
  */
 export interface ActiveLicenseContext {
   instanceId: string;
-  /** License tier (e.g. "basic", "professional", "enterprise") */
+  /** License tier (e.g. "community", "professional", "enterprise") */
   tier: string;
   features: string[];
-  maxBeds: number;
+  limits: PlanLimits;
   /** When the current lease expires */
   expiresAt: Date;
   /** True when status === "restricted" — read-only operations still allowed */

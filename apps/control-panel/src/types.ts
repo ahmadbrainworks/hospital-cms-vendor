@@ -109,8 +109,13 @@ export interface LicenseRecord {
   instanceId: string;
   tier: 'community' | 'professional' | 'enterprise';
   features: string[];
-  maxBeds: number;
-  maxUsers: number;
+  limits: {
+    maxUsers: number;
+    maxBeds: number;
+    maxDepartments: number;
+    maxStaff: number;
+    maxAppointmentsPerDay?: number;
+  };
   issuedAt: Date;
   expiresAt: Date;
   signature: string;

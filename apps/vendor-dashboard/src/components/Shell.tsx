@@ -1,135 +1,169 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { useAuth } from "@/lib/auth-context";
 import { P } from "@/lib/permissions";
+import { ThemeSwitcher } from "./ThemeSwitcher";
+import {
+  BarChart3,
+  TrendingUp,
+  Building2,
+  Key,
+  FileText,
+  Zap,
+  Radio,
+  Package,
+  Palette,
+  Users,
+  LogOut,
+  Menu,
+  X,
+  Plug,
+} from "lucide-react";
 
 interface NavItem {
   href: string;
   label: string;
-  /** At least one of these permissions is required for the link to show. */
+  icon: React.ReactNode;
   permissions?: string[];
 }
 
 const NAV: NavItem[] = [
-  { href: "/overview", label: "Overview" },
-  {
-    href: "/monitoring",
-    label: "Monitoring",
-    permissions: [P.INSTANCE_VIEW],
-  },
-  {
-    href: "/instances",
-    label: "Instances",
-    permissions: [P.INSTANCE_VIEW],
-  },
-  {
-    href: "/registration-tokens",
-    label: "Registration Tokens",
-    permissions: [P.INSTANCE_VIEW],
-  },
-  {
-    href: "/licenses",
-    label: "Licenses",
-    permissions: [P.LICENSE_VIEW],
-  },
-  {
-    href: "/commands",
-    label: "Commands",
-    permissions: [P.COMMAND_VIEW],
-  },
-  {
-    href: "/telemetry",
-    label: "Telemetry",
-    permissions: [P.TELEMETRY_VIEW],
-  },
-  {
-    href: "/packages",
-    label: "Packages",
-    permissions: [P.PACKAGE_VIEW],
-  },
-  {
-    href: "/themes",
-    label: "Theme Builder",
-    permissions: [P.PACKAGE_VIEW],
-  },
-  {
-    href: "/staff",
-    label: "Staff",
-    permissions: [P.STAFF_VIEW],
-  },
-  {
-    href: "/audit-log",
-    label: "Audit Log",
-    permissions: [P.AUDIT_VIEW],
-  },
-  {
-    href: "/settings",
-    label: "Settings",
-    permissions: [P.SETTINGS_VIEW],
-  },
+  { href: "/overview", label: "Overview", icon: <BarChart3 size={20} /> },
+  { href: "/monitoring", label: "Monitoring", icon: <TrendingUp size={20} />, permissions: [P.INSTANCE_VIEW] },
+  { href: "/instances", label: "Instances", icon: <Building2 size={20} />, permissions: [P.INSTANCE_VIEW] },
+  { href: "/registration-tokens", label: "Tokens", icon: <Key size={20} />, permissions: [P.INSTANCE_VIEW] },
+  { href: "/licenses", label: "Licenses", icon: <FileText size={20} />, permissions: [P.LICENSE_VIEW] },
+  { href: "/commands", label: "Commands", icon: <Zap size={20} />, permissions: [P.COMMAND_VIEW] },
+  { href: "/telemetry", label: "Telemetry", icon: <Radio size={20} />, permissions: [P.TELEMETRY_VIEW] },
+  { href: "/packages", label: "Packages", icon: <Package size={20} />, permissions: [P.PACKAGE_VIEW] },
+  { href: "/plugins", label: "Plugins", icon: <Plug size={20} />, permissions: [P.PACKAGE_VIEW] },
+  { href: "/themes", label: "Themes", icon: <Palette size={20} />, permissions: [P.PACKAGE_VIEW] },
+  { href: "/staff", label: "Staff", icon: <Users size={20} />, permissions: [P.STAFF_VIEW] },
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const { user, logout, hasAnyPermission } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const visibleNav = NAV.filter(
-    (n) => !n.permissions || hasAnyPermission(...n.permissions),
-  );
+  const visibleNav = NAV.filter((n) => !n.permissions || hasAnyPermission(...n.permissions));
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: "var(--theme-bg)" }}>
       {/* Sidebar */}
-      <aside className="w-56 bg-indigo-950 text-white flex flex-col flex-shrink-0">
+      <aside
+        className={clsx(
+          "border-r flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out z-40",
+          sidebarOpen ? "w-64" : "w-20",
+        )}
+        style={{
+          backgroundColor: "var(--theme-surface)",
+          borderColor: "var(--theme-border)",
+        }}
+      >
         {/* Brand */}
-        <div className="px-4 py-5 border-b border-indigo-800">
-          <div className="font-bold text-sm tracking-wide">Hospital CMS</div>
-          <div className="text-xs text-indigo-300 mt-0.5">Vendor Dashboard</div>
+        <div className="px-6 py-6 border-b" style={{ borderColor: "var(--theme-border)" }}>
+          <div
+            className={clsx(
+              "font-bold transition-all",
+              sidebarOpen ? "text-2xl" : "text-sm text-center"
+            )}
+            style={{ color: "var(--theme-primary)" }}
+          >
+            {sidebarOpen ? "Hospital CMS" : "HC"}
+          </div>
+          {sidebarOpen && (
+            <div className="text-xs mt-1" style={{ color: "var(--theme-textSecondary)" }}>
+              Vendor Dashboard
+            </div>
+          )}
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {visibleNav.map((n) => {
-            const active =
-              path === n.href || (n.href !== "/overview" && path.startsWith(n.href + "/"));
+            const active = path === n.href || (n.href !== "/overview" && path.startsWith(n.href + "/"));
             return (
               <Link
                 key={n.href}
                 href={n.href}
                 className={clsx(
-                  "block px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  active
-                    ? "bg-indigo-700 text-white"
-                    : "text-indigo-200 hover:text-white hover:bg-indigo-800/60",
+                  "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200",
+                  sidebarOpen ? "" : "justify-center",
+                  active ? "card-hover" : "hover:opacity-80"
                 )}
+                title={!sidebarOpen ? n.label : undefined}
+                style={active ? {
+                  backgroundColor: "rgba(2, 136, 209, 0.15)",
+                  borderColor: "var(--theme-primary)",
+                  color: "var(--theme-primaryLight)",
+                } : {
+                  color: "var(--theme-textSecondary)",
+                }}
               >
-                {n.label}
+                {n.icon}
+                {sidebarOpen && <span>{n.label}</span>}
               </Link>
             );
           })}
         </nav>
 
+        {/* Toggle button */}
+        <div className="p-3 border-t" style={{ borderColor: "var(--theme-border)" }}>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="btn btn-secondary w-full justify-center"
+          >
+            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+
         {/* User footer */}
         {user && (
-          <div className="px-4 py-3 border-t border-indigo-800 text-xs">
-            <div className="text-indigo-200 truncate">{user.displayName}</div>
-            <div className="text-indigo-400 truncate mb-2">{user.email}</div>
+          <div className="px-4 py-4 border-t" style={{ borderColor: "var(--theme-border)" }}>
+            {sidebarOpen && (
+              <>
+                <div className="text-xs font-medium truncate" style={{ color: "var(--theme-text)" }}>
+                  {user.displayName}
+                </div>
+                <div className="text-xs truncate mb-3" style={{ color: "var(--theme-textSecondary)" }}>
+                  {user.email}
+                </div>
+              </>
+            )}
             <button
               onClick={() => logout()}
-              className="text-indigo-300 hover:text-white transition-colors text-xs"
+              className="btn btn-danger w-full text-xs justify-center gap-2"
             >
-              Sign out
+              <LogOut size={16} />
+              {sidebarOpen && "Sign out"}
             </button>
           </div>
         )}
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        <div className="max-w-7xl mx-auto px-6 py-8">{children}</div>
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Topbar */}
+        <div
+          className="border-b px-8 py-4 flex items-center justify-between"
+          style={{
+            backgroundColor: "var(--theme-surface)",
+            borderColor: "var(--theme-border)",
+          }}
+        >
+          <div className="flex-1" />
+          <ThemeSwitcher />
+        </div>
+
+        {/* Page content */}
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-7xl mx-auto px-8 py-8 animate-fade-in">{children}</div>
+        </div>
       </main>
     </div>
   );

@@ -1,170 +1,236 @@
 "use client";
 
-import { useState } from "react";
-import useSWR, { mutate } from "swr";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { cpApi } from "@/lib/api";
-import { Shell } from "@/components/Shell";
-import { useAuth } from "@/lib/auth-context";
-import { P } from "@/lib/permissions";
+import {
+  Button,
+  Input,
+  Select,
+  Table,
+  Badge,
+  Card,
+  CardContent,
+  Alert,
+  Topbar,
+  Skeleton,
+  Dropdown,
+} from "@/components/ui";
+import { Search, Eye, Download, Copy, MoreVertical, Plus } from "lucide-react";
 
-interface PackageRecord {
-  packageId: string;
+interface Package {
+  _id: string;
   name: string;
-  version: string;
   type: string;
-  publishedAt: string;
-  description?: string;
-  size?: number;
-  yanked?: boolean;
-}
-
-const PACKAGES_URL = "/api/vendor/packages";
-
-function TypeBadge({ type }: { type: string }) {
-  const colors: Record<string, string> = {
-    plugin: "bg-violet-50 text-violet-700",
-    theme: "bg-cyan-50 text-cyan-700",
-    widget: "bg-amber-50 text-amber-700",
-  };
-  return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors[type] ?? "bg-gray-50 text-gray-700"}`}
-    >
-      {type}
-    </span>
-  );
+  latestVersion: string;
+  description: string;
+  status: "stable" | "beta" | "deprecated";
+  deployedCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function PackagesPage() {
-  const { data, error, isLoading } = useSWR(
-    PACKAGES_URL,
-    (url: string): Promise<any> => cpApi.get(url),
-    { refreshInterval: 30_000 },
-  );
-  const { hasPermission } = useAuth();
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [typeFilter, setTypeFilter] = useState<string>("all");
+  useEffect(() => {
+    const fetchPackages = async () => {
+      try {
+        setLoading(true);
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
+        const res = await fetch(`${baseUrl}/packages?limit=100`, {
+          credentials: "include",
+        });
 
-  const packages: PackageRecord[] = data?.data ?? [];
-  const filtered =
-    typeFilter === "all"
-      ? packages
-      : packages.filter((p) => p.type === typeFilter);
+        if (!res.ok) throw new Error("Failed to fetch packages");
 
-  const types = Array.from(new Set(packages.map((p) => p.type)));
+        const data = await res.json();
+        const packagesList = Array.isArray(data.data) ? data.data : data.packages || [];
+        setPackages(packagesList);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load packages");
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPackages();
+  }, []);
+
+  const filteredPackages = useMemo(() => {
+    return packages.filter((p) => {
+      const matchesSearch =
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesType = !typeFilter || p.type === typeFilter;
+      const matchesStatus = !statusFilter || p.status === statusFilter;
+
+      return matchesSearch && matchesType && matchesStatus;
+    });
+  }, [packages, searchQuery, typeFilter, statusFilter]);
+
+  const uniqueTypes = [...new Set(packages.map((p) => p.type))];
+
+  const tableColumns = [
+    { key: "name", label: "Package", width: "200px" },
+    { key: "type", label: "Type" },
+    { key: "latestVersion", label: "Latest Version" },
+    { key: "status", label: "Status" },
+    { key: "deployedCount", label: "Deployments" },
+    { key: "updated", label: "Updated" },
+    { key: "actions", label: "" },
+  ];
+
+  const tableRows = filteredPackages.map((p) => ({
+    name: p.name,
+    type: p.type,
+    latestVersion: `v${p.latestVersion}`,
+    status: (
+      <Badge
+        variant={
+          p.status === "stable"
+            ? "success"
+            : p.status === "beta"
+              ? "warning"
+              : "error"
+        }
+      >
+        {p.status}
+      </Badge>
+    ),
+    deployedCount: p.deployedCount.toLocaleString(),
+    updated: new Date(p.updatedAt).toLocaleDateString(),
+    actions: (
+      <Dropdown
+        trigger={<Button variant="ghost" size="sm" icon={<MoreVertical size={16} />} />}
+        items={[
+          {
+            id: "view",
+            label: "View Details",
+            icon: <Eye size={16} />,
+            onClick: () => (window.location.href = `/packages/${p._id}`),
+          },
+          {
+            id: "download",
+            label: "Download",
+            icon: <Download size={16} />,
+            onClick: () => console.log("Download package", p._id),
+          },
+          {
+            id: "copy-id",
+            label: "Copy Package ID",
+            icon: <Copy size={16} />,
+            onClick: () => {
+              navigator.clipboard.writeText(p._id);
+            },
+          },
+        ]}
+      />
+    ),
+  }));
 
   return (
-    <Shell>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Package Registry</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Vendor-signed plugins, themes, and widgets.
-          </p>
-        </div>
-        {hasPermission(P.PACKAGE_CREATE) && (
-          <Link
-            href="/packages/publish"
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            + Publish New
+    <div className="min-h-screen bg-neutral-900">
+      <Topbar
+        title="Packages"
+        subtitle="Manage deployable packages"
+        rightSlot={
+          <Link href="/packages/new">
+            <Button icon={<Plus size={16} />}>+ Create Package</Button>
           </Link>
-        )}
-      </div>
+        }
+        sticky
+      />
 
-      {/* Type filter */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => setTypeFilter("all")}
-          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-            typeFilter === "all"
-              ? "bg-indigo-100 text-indigo-800"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          }`}
-        >
-          All ({packages.length})
-        </button>
-        {types.map((t) => (
-          <button
-            key={t}
-            onClick={() => setTypeFilter(t)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize ${
-              typeFilter === t
-                ? "bg-indigo-100 text-indigo-800"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
+      <div className="p-8 max-w-7xl mx-auto">
+        {error && (
+          <Alert
+            variant="error"
+            title="Error"
+            dismissible
+            onClose={() => setError(null)}
+            className="mb-6"
           >
-            {t}s ({packages.filter((p) => p.type === t).length})
-          </button>
-        ))}
+            {error}
+          </Alert>
+        )}
+
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="Search packages"
+                placeholder="Search by name or description..."
+                icon={<Search size={16} />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+
+              <Select
+                label="Filter by type"
+                placeholder="All types"
+                options={uniqueTypes.map((t) => ({ value: t, label: t }))}
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+              />
+
+              <Select
+                label="Filter by status"
+                placeholder="All statuses"
+                options={[
+                  { value: "stable", label: "Stable" },
+                  { value: "beta", label: "Beta" },
+                  { value: "deprecated", label: "Deprecated" },
+                ]}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {loading ? (
+          <Card>
+            <CardContent className="pt-6">
+              <Skeleton count={5} />
+            </CardContent>
+          </Card>
+        ) : filteredPackages.length > 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <Table columns={tableColumns} rows={tableRows} hoverable />
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="py-12 text-center">
+                <p className="text-neutral-400 mb-4">
+                  {searchQuery || typeFilter || statusFilter
+                    ? "No packages match your filters"
+                    : "No packages yet"}
+                </p>
+                {!searchQuery && !typeFilter && !statusFilter && (
+                  <Link href="/packages/new">
+                    <Button>Create First Package</Button>
+                  </Link>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="mt-4 text-sm text-neutral-400">
+          Showing {filteredPackages.length} of {packages.length} packages
+        </div>
       </div>
-
-      {isLoading && <div className="text-sm text-gray-400">Loading...</div>}
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-          {error.message}
-        </div>
-      )}
-
-      {filtered.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Latest</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Published</th>
-                <th className="px-4 py-3">Size</th>
-                <th className="px-4 py-3">Description</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filtered.map((pkg) => (
-                <tr key={`${pkg.packageId}-${pkg.version}`} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/packages/${pkg.packageId}`}
-                      className="font-medium text-indigo-700 hover:text-indigo-900"
-                    >
-                      {pkg.name}
-                    </Link>
-                    <div className="text-xs text-gray-400 font-mono">
-                      {pkg.packageId}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                    {pkg.version}
-                  </td>
-                  <td className="px-4 py-3">
-                    <TypeBadge type={pkg.type} />
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {new Date(pkg.publishedAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {pkg.size
-                      ? `${(pkg.size / 1024).toFixed(1)} KB`
-                      : "-"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs max-w-xs truncate">
-                    {pkg.description ?? "-"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {!isLoading && filtered.length === 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400 text-sm">
-          {packages.length === 0
-            ? "No packages published yet."
-            : "No packages match the selected filter."}
-        </div>
-      )}
-    </Shell>
+    </div>
   );
 }

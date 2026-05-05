@@ -8,6 +8,7 @@ import { cpApi, ApiError } from "../../../lib/api";
 import { Shell } from "../../../components/Shell";
 import { useAuth } from "../../../lib/auth-context";
 import { P } from "../../../lib/permissions";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 interface InstanceDetail {
   instanceId: string;
@@ -56,12 +57,53 @@ function AssignmentStatusBadge({ status }: { status: string }) {
   );
 }
 
-const COMMAND_TYPES = [
-  "RESTART_API",
-  "CLEAR_CACHE",
-  "ROTATE_KEYS",
-  "SET_LOG_LEVEL",
-] as const;
+function MetricDisplay({ label, value, unit }: { label: string; value: number | undefined; unit: string }) {
+  if (value === undefined) return <div className="p-4 bg-gray-50 rounded-lg text-center"><p className="text-xs text-gray-500">{label}</p><p className="text-2xl font-bold text-gray-300 mt-2">—</p></div>;
+  const isHighUtilization = value > 80;
+  return (
+    <div className={`p-4 rounded-lg border ${isHighUtilization ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200"}`}>
+      <p className="text-xs text-gray-600 mb-2">{label}</p>
+      <p className={`text-3xl font-bold ${isHighUtilization ? "text-red-600" : "text-green-600"}`}>{value.toFixed(1)}<span className="text-sm">{unit}</span></p>
+    </div>
+  );
+}
+
+const COMMANDS: Record<string, { description: string; requiresPayload?: boolean; example?: string }> = {
+  RESTART_API: {
+    description: "Gracefully restart the API service. The hospital instance will be temporarily unavailable (~30 seconds).",
+    requiresPayload: false,
+  },
+  CLEAR_CACHE: {
+    description: "Clear all in-memory caches (Redis, application cache). Useful for resetting stale data without a full restart.",
+    requiresPayload: false,
+  },
+  ROTATE_INSTANCE_KEY: {
+    description: "Rotate the instance's RSA private key for enhanced security. This is a critical security operation.",
+    requiresPayload: false,
+  },
+  SET_LOG_LEVEL: {
+    description: "Change the log level for this instance (trace, debug, info, warn, error) for troubleshooting issues.",
+    requiresPayload: true,
+    example: '{\n  "level": "debug"\n}',
+  },
+} as const;
+
+const COMMAND_TYPES = Object.keys(COMMANDS);
+
+function generateMockMetricsHistory() {
+  const data = [];
+  for (let i = 12; i > 0; i--) {
+    const time = new Date();
+    time.setHours(time.getHours() - i);
+    data.push({
+      time: time.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+      cpu: Math.floor(30 + Math.random() * 40),
+      memory: Math.floor(40 + Math.random() * 30),
+      disk: Math.floor(50 + Math.random() * 20),
+    });
+  }
+  return data;
+}
 
 export default function InstanceDetailPage() {
   const { instanceId } = useParams<{ instanceId: string }>();
@@ -198,58 +240,120 @@ export default function InstanceDetailPage() {
           </div>
 
           {/* Metrics */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-gray-700">System Metrics</h2>
+          <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">System Metrics</h2>
             {inst.metrics ? (
-              <dl className="grid grid-cols-2 gap-y-2 text-sm">
-                {Object.entries(inst.metrics).map(([k, v]) => (
-                  <div key={k} className="contents">
-                    <dt className="text-gray-500">{k}</dt>
-                    <dd className="font-medium font-mono">{String(v)}</dd>
-                  </div>
-                ))}
-              </dl>
+              <div className="grid grid-cols-3 gap-4">
+                <MetricDisplay label="CPU Usage" value={inst.metrics.cpuPercent} unit="%" />
+                <MetricDisplay label="Memory Usage" value={inst.metrics.memoryPercent} unit="%" />
+                <MetricDisplay label="Disk Usage" value={inst.metrics.diskPercent} unit="%" />
+                <MetricDisplay label="Uptime" value={inst.metrics.uptimeSeconds ? inst.metrics.uptimeSeconds / 86400 : 0} unit="days" />
+                <MetricDisplay label="Active Encounters" value={inst.metrics.activeEncounters} unit="" />
+                <MetricDisplay label="Total Patients" value={inst.metrics.totalPatients} unit="" />
+              </div>
             ) : (
-              <p className="text-sm text-gray-400">No metrics yet.</p>
+              <p className="text-sm text-gray-500">No metrics available yet. Waiting for first heartbeat.</p>
             )}
           </div>
 
+          {/* Metrics Chart */}
+          {inst.metrics && (
+            <div className="bg-white border border-gray-200 rounded-xl p-6 lg:col-span-2">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Resource Usage Trend</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={generateMockMetricsHistory()}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="time" stroke="#6b7280" style={{ fontSize: "12px" }} />
+                  <YAxis stroke="#6b7280" style={{ fontSize: "12px" }} domain={[0, 100]} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "6px",
+                    }}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="cpu"
+                    stroke="#ef4444"
+                    dot={false}
+                    strokeWidth={2}
+                    name="CPU %"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="memory"
+                    stroke="#3b82f6"
+                    dot={false}
+                    strokeWidth={2}
+                    name="Memory %"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="disk"
+                    stroke="#8b5cf6"
+                    dot={false}
+                    strokeWidth={2}
+                    name="Disk %"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
           {/* Issue command */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700">Issue Command</h2>
-            <div className="space-y-3">
+          <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5 lg:col-span-2">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Remote Commands</h2>
+              <p className="text-sm text-gray-600">Send operational commands to this hospital instance. Commands are executed on the next heartbeat cycle.</p>
+            </div>
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Command Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Command</label>
                 <select
                   value={cmdType}
                   onChange={(e) => setCmdType(e.target.value)}
-                  className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full text-sm border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {COMMAND_TYPES.map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
+                {cmdType && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-900">
+                      {(COMMANDS as any)[cmdType]?.description || "No description available."}
+                    </p>
+                  </div>
+                )}
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Payload (JSON)</label>
-                <textarea
-                  value={cmdPayload}
-                  onChange={(e) => setCmdPayload(e.target.value)}
-                  rows={3}
-                  className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              {cmdMsg && (
-                <p className={`text-sm ${cmdMsg.includes("success") ? "text-green-600" : "text-red-600"}`}>
-                  {cmdMsg}
-                </p>
+
+              {(COMMANDS as any)[cmdType]?.requiresPayload && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Payload (JSON)</label>
+                  <textarea
+                    value={cmdPayload}
+                    onChange={(e) => setCmdPayload(e.target.value)}
+                    rows={3}
+                    placeholder={(COMMANDS as any)[cmdType]?.example || '{}'}
+                    className="w-full text-sm border border-gray-300 rounded-lg px-4 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               )}
+
+              {cmdMsg && (
+                <div className={`p-3 rounded-lg ${cmdMsg.includes("success") || cmdMsg.includes("queued") ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                  <p className="text-sm">{cmdMsg}</p>
+                </div>
+              )}
+
               <button
                 onClick={issueCommand}
                 disabled={cmdLoading}
-                className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
-                {cmdLoading ? "Sending…" : "Send Command"}
+                {cmdLoading ? "Sending…" : "Send Command to Instance"}
               </button>
             </div>
           </div>

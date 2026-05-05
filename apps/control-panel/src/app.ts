@@ -28,6 +28,7 @@ import { DesiredStateBuilderService } from "./services/desired-state-builder.ser
 import { createPackagesRouter } from "./routes/packages";
 import { createDesiredStateRouter } from "./routes/desired-state";
 import { createPackageAssignmentsRouter } from "./routes/package-assignments";
+import { createHospitalsRouter } from "./routes/hospitals";
 import { TelemetryService } from "./services/telemetry.service";
 import { createTelemetryRouter } from "./routes/telemetry";
 import { AlertEngineService } from "./services/alert-engine.service";
@@ -240,11 +241,14 @@ export function createControlPanelApp(
   // /api/vendor/* aliases are used by the vendor dashboard frontend
   const instancesRouter = createInstancesRouter(instanceService, licenseService, commandService);
   const licensesRouter = createLicensesRouter(licenseService);
+  const hospitalsRouter = createHospitalsRouter(db);
 
   app.use('/api/instances', requireVendorAuthOrStaff, instancesRouter);
   app.use('/api/vendor/instances', requireVendorAuthOrStaff, instancesRouter);
   app.use('/api/licenses', requireVendorAuthOrStaff, licensesRouter);
   app.use('/api/vendor/licenses', requireVendorAuthOrStaff, licensesRouter);
+  app.use('/api/hospitals', requireVendorAuthOrStaff, hospitalsRouter);
+  app.use('/api/vendor/hospitals', requireVendorAuthOrStaff, hospitalsRouter);
 
   // Package registry routes
   const packagesRouter = createPackagesRouter(packageRegistryService, packageAssignmentService);

@@ -4,57 +4,12 @@ import { createLogger } from "@hospital-cms/logger";
 import { NotFoundError, ConflictError } from "@hospital-cms/errors";
 import { signLicenseToken } from "@hospital-cms/crypto-vendor";
 import { verifyLicenseToken } from "@hospital-cms/crypto";
+import { TIER_DEFAULT_FEATURES, TIER_DEFAULT_LIMITS } from "@hospital-cms/contracts";
 import { CP_COLLECTIONS } from "../db";
 import type { LicenseRecord } from "../types";
 import { VendorAuditService } from "./vendor-audit.service";
 
 const logger = createLogger({ module: "LicenseService" });
-
-const TIER_FEATURES: Record<LicenseRecord["tier"], string[]> = {
-  community: ["patients", "encounters", "billing_basic", "lab_basic"],
-  professional: [
-    "patients",
-    "encounters",
-    "billing_basic",
-    "billing_advanced",
-    "lab_basic",
-    "lab_advanced",
-    "pharmacy",
-    "workflow_engine",
-    "plugin_runtime",
-    "theme_engine",
-    "audit_export",
-  ],
-  enterprise: [
-    "patients",
-    "encounters",
-    "billing_basic",
-    "billing_advanced",
-    "lab_basic",
-    "lab_advanced",
-    "pharmacy",
-    "workflow_engine",
-    "plugin_runtime",
-    "theme_engine",
-    "audit_export",
-    "multi_location",
-    "api_access",
-    "custom_reports",
-    "sso",
-  ],
-};
-
-const TIER_MAX_BEDS: Record<LicenseRecord["tier"], number> = {
-  community: 50,
-  professional: 500,
-  enterprise: 99999,
-};
-
-const TIER_MAX_USERS: Record<LicenseRecord["tier"], number> = {
-  community: 20,
-  professional: 200,
-  enterprise: 99999,
-};
 
 export class LicenseService {
   private readonly audit: VendorAuditService;
@@ -107,9 +62,8 @@ export class LicenseService {
       licenseId,
       instanceId,
       tier,
-      features: TIER_FEATURES[tier],
-      maxBeds: TIER_MAX_BEDS[tier],
-      maxUsers: TIER_MAX_USERS[tier],
+      features: TIER_DEFAULT_FEATURES[tier],
+      limits: TIER_DEFAULT_LIMITS[tier],
       issuedAt: now.toISOString(),
       expiresAt: expiresAt.toISOString(),
     };

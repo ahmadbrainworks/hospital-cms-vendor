@@ -4,6 +4,11 @@ import useSWR from "swr";
 import { cpApi, ApiError } from "../../lib/api";
 import { Shell } from "../../components/Shell";
 import Link from "next/link";
+import {
+  getInstanceStatus,
+  formatLastHeartbeat,
+  getNetworkQualityLabel,
+} from "../../lib/instance-utils";
 
 interface Instance {
   instanceId: string;
@@ -11,12 +16,17 @@ interface Instance {
   status: string;
   tier: string;
   lastHeartbeat?: string;
+  networkQuality?: string;
   metrics?: {
     cpuPercent?: number;
     memoryPercent?: number;
     diskPercent?: number;
+    uptimeSeconds?: number;
+    activeEncounters?: number;
+    totalPatients?: number;
   };
   licenseExpiresAt?: string;
+  agentVersion?: string;
 }
 
 interface InstancesResponse {
@@ -26,28 +36,41 @@ interface InstancesResponse {
   };
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const colours: Record<string, string> = {
-    ACTIVE: "bg-green-100 text-green-800",
-    SUSPENDED: "bg-yellow-100 text-yellow-800",
-    DECOMMISSIONED: "bg-red-100 text-red-800",
+function StatusBadge({ status, lastHeartbeat, networkQuality }: { status: string; lastHeartbeat?: string; networkQuality?: string }) {
+  const health = getInstanceStatus(lastHeartbeat, networkQuality);
+  const variants = {
+    online: "bg-green-500/20 text-green-300 border-green-500/30",
+    degraded: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+    offline: "bg-red-500/20 text-red-300 border-red-500/30",
+  };
+  const dotColor = {
+    online: "bg-green-400",
+    degraded: "bg-yellow-400",
+    offline: "bg-red-400",
   };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colours[status] ?? "bg-gray-100 text-gray-600"}`}>
-      {status}
+    <span className={`badge ${variants[health as keyof typeof variants]}`}>
+      <span className={`w-2 h-2 rounded-full mr-2 ${dotColor[health as keyof typeof dotColor]}`} />
+      {health.charAt(0).toUpperCase() + health.slice(1)}
     </span>
   );
 }
 
-function MetricBar({ value, warn = 80, danger = 90 }: { value?: number; warn?: number; danger?: number }) {
-  if (value == null) return <span className="text-gray-300 text-xs">—</span>;
-  const colour = value >= danger ? "bg-red-500" : value >= warn ? "bg-yellow-400" : "bg-green-400";
+function MetricCard({ label, value, unit, warning = 70, critical = 85 }: { label: string; value?: number; unit: string; warning?: number; critical?: number }) {
+  if (value == null) return <div className="text-center"><p className="text-xs text-slate-500 mb-1">{label}</p><p className="text-2xl font-bold text-slate-400">—</p></div>;
+  const isDanger = value >= critical;
+  const isWarning = value >= warning;
+  const textColor = isDanger ? "text-red-400" : isWarning ? "text-yellow-400" : "text-green-400";
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-20 bg-gray-100 rounded-full h-1.5">
-        <div className={`h-1.5 rounded-full ${colour}`} style={{ width: `${Math.min(value, 100)}%` }} />
+    <div className="text-center">
+      <p className="text-xs text-slate-500 mb-2">{label}</p>
+      <p className={`text-2xl font-bold ${textColor}`}>{value.toFixed(0)}{unit}</p>
+      <div className="w-full bg-slate-700/50 rounded-full h-1.5 mt-3">
+        <div
+          className={`h-1.5 rounded-full transition-all ${isDanger ? "bg-red-500" : isWarning ? "bg-yellow-500" : "bg-green-500"}`}
+          style={{ width: `${Math.min(value, 100)}%` }}
+        />
       </div>
-      <span className="text-xs text-gray-600">{value.toFixed(0)}%</span>
     </div>
   );
 }
@@ -63,7 +86,7 @@ export default function InstancesPage() {
     : data?.data.instances ?? [];
 
   const handleDelete = async (instanceId: string, name: string) => {
-    if (!confirm(`Delete "${name}"? This will permanently remove the instance and all its licenses, commands, and data.`)) return;
+    if (!confirm(`Delete "${name}"? This will permanently remove the instance, all licenses, commands, and data.`)) return;
     try {
       await cpApi.delete(`/api/vendor/instances/${instanceId}`);
       mutate();
@@ -74,83 +97,121 @@ export default function InstancesPage() {
 
   return (
     <Shell>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Hospital Instances</h1>
-        <p className="text-sm text-gray-500 mt-1">All distributed CMS instances reporting to this control panel.</p>
+      <div className="mb-8 animate-slide-up">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+          Hospital Instances
+        </h1>
+        <p className="text-slate-400 mt-2">Monitor and manage all distributed CMS instances</p>
       </div>
 
       {isLoading && (
-        <div className="text-sm text-gray-400">Loading instances…</div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-slate-400">
+            <div className="animate-spin inline-block w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full mb-3" />
+            <p className="text-sm">Loading instances…</p>
+          </div>
+        </div>
       )}
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-300 animate-slide-up">
           Failed to load instances: {error.message}
         </div>
       )}
 
-      {data && (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <th className="px-4 py-3">Hospital</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Tier</th>
-                <th className="px-4 py-3">CPU</th>
-                <th className="px-4 py-3">Memory</th>
-                <th className="px-4 py-3">Disk</th>
-                <th className="px-4 py-3">Last Heartbeat</th>
-                <th className="px-4 py-3">License Expires</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {instances.map((inst) => (
-                <tr key={inst.instanceId} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">{inst.hospitalName}</td>
-                  <td className="px-4 py-3"><StatusBadge status={inst.status} /></td>
-                  <td className="px-4 py-3 capitalize text-gray-600">{inst.tier}</td>
-                  <td className="px-4 py-3"><MetricBar value={inst.metrics?.cpuPercent} /></td>
-                  <td className="px-4 py-3"><MetricBar value={inst.metrics?.memoryPercent} /></td>
-                  <td className="px-4 py-3"><MetricBar value={inst.metrics?.diskPercent} /></td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {inst.lastHeartbeat
-                      ? new Date(inst.lastHeartbeat).toLocaleString()
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {inst.licenseExpiresAt
-                      ? new Date(inst.licenseExpiresAt).toLocaleDateString()
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3 justify-end">
-                      <Link
-                        href={`/instances/${inst.instanceId}`}
-                        className="text-indigo-600 hover:text-indigo-800 font-medium text-xs"
-                      >
-                        Manage
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(inst.instanceId, inst.hospitalName)}
-                        className="text-red-600 hover:text-red-800 font-medium text-xs"
-                      >
-                        Delete
-                      </button>
+      {data && instances.length === 0 && (
+        <div className="text-center py-16 card rounded-2xl">
+          <div className="text-5xl mb-3">🏥</div>
+          <p className="text-slate-400">No instances registered yet</p>
+        </div>
+      )}
+
+      {data && instances.length > 0 && (
+        <div className="grid gap-6">
+          {instances.map((inst, i) => (
+            <div
+              key={inst.instanceId}
+              className="card-hover rounded-2xl overflow-hidden group animate-scale-in"
+              style={{ animationDelay: `${i * 50}ms` }}
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-slate-700/50 bg-gradient-to-r from-slate-900/50 to-transparent">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <h3 className="text-xl font-semibold text-slate-50">{inst.hospitalName}</h3>
+                      <StatusBadge status={inst.status} lastHeartbeat={inst.lastHeartbeat} networkQuality={inst.networkQuality} />
                     </div>
-                  </td>
-                </tr>
-              ))}
-              {instances.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-400 text-sm">
-                    No instances registered yet.
-                  </td>
-                </tr>
+                    <div className="flex items-center gap-4 text-xs text-slate-400">
+                      <span>ID: <span className="font-mono text-slate-300">{inst.instanceId.slice(0, 8)}</span></span>
+                      <span>Tier: <span className="font-medium capitalize text-slate-200">{inst.tier}</span></span>
+                      <span>Agent: <span className="text-slate-300">v{inst.agentVersion}</span></span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-slate-500 mb-1">Last Heartbeat</p>
+                    <p className="font-medium text-slate-100">{formatLastHeartbeat(inst.lastHeartbeat)}</p>
+                    {inst.networkQuality && (
+                      <p className="text-xs mt-2 text-slate-400">
+                        {getNetworkQualityLabel(inst.networkQuality)} Network
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Metrics Grid */}
+              {inst.metrics && (
+                <div className="p-6 grid grid-cols-6 gap-4 border-b border-slate-700/50 bg-slate-900/20">
+                  <MetricCard label="CPU" value={inst.metrics.cpuPercent} unit="%" />
+                  <MetricCard label="Memory" value={inst.metrics.memoryPercent} unit="%" />
+                  <MetricCard label="Disk" value={inst.metrics.diskPercent} unit="%" warning={80} critical={90} />
+                  <div className="text-center">
+                    <p className="text-xs text-slate-500 mb-1">Uptime</p>
+                    <p className="text-2xl font-bold text-slate-100">
+                      {inst.metrics.uptimeSeconds ? (inst.metrics.uptimeSeconds / 86400).toFixed(1) : "—"}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-2">days</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-slate-500 mb-1">Encounters</p>
+                    <p className="text-2xl font-bold text-blue-400">{inst.metrics.activeEncounters ?? "—"}</p>
+                    <p className="text-xs text-slate-500 mt-2">active</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-slate-500 mb-1">Patients</p>
+                    <p className="text-2xl font-bold text-purple-400">{inst.metrics.totalPatients ?? "—"}</p>
+                    <p className="text-xs text-slate-500 mt-2">total</p>
+                  </div>
+                </div>
               )}
-            </tbody>
-          </table>
+
+              {/* License & Actions */}
+              <div className="p-6 flex items-center justify-between bg-slate-900/20">
+                <div>
+                  {inst.licenseExpiresAt && (
+                    <p className="text-xs text-slate-400">
+                      License expires <span className="font-medium text-slate-300">{new Date(inst.licenseExpiresAt).toLocaleDateString()}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href={`/instances/${inst.instanceId}`}
+                    className="btn btn-primary text-xs"
+                  >
+                    Manage
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(inst.instanceId, inst.hospitalName)}
+                    className="btn btn-danger text-xs"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </Shell>
