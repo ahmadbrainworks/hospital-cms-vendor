@@ -42,7 +42,7 @@ export default function DeploymentsPage() {
       try {
         setLoading(true);
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
-        const res = await fetch(`${baseUrl}/deployments?limit=200`, {
+        const res = await fetch(`${baseUrl}/api/vendor/deployments?limit=200`, {
           credentials: "include",
         });
 

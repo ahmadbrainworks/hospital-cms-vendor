@@ -42,7 +42,7 @@ export default function HospitalsPage() {
       try {
         setLoading(true);
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
-        const res = await fetch(`${baseUrl}/hospitals?limit=100`, {
+        const res = await fetch(`${baseUrl}/api/vendor/hospitals?limit=100`, {
           credentials: "include",
         });
 

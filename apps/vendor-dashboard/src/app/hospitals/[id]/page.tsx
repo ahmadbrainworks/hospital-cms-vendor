@@ -67,7 +67,7 @@ export default function HospitalDetailPage() {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
 
         // Fetch hospital details
-        const hospitalRes = await fetch(`${baseUrl}/hospitals/${hospitalId}`, {
+        const hospitalRes = await fetch(`${baseUrl}/api/vendor/hospitals/${hospitalId}`, {
           credentials: "include",
         });
 
@@ -77,7 +77,7 @@ export default function HospitalDetailPage() {
 
         // Fetch package assignments
         const packagesRes = await fetch(
-          `${baseUrl}/hospitals/${hospitalId}/packages`,
+          `${baseUrl}/api/vendor/hospitals/${hospitalId}/packages`,
           { credentials: "include" }
         );
 
@@ -88,7 +88,7 @@ export default function HospitalDetailPage() {
 
         // Fetch usage metrics
         const usageRes = await fetch(
-          `${baseUrl}/hospitals/${hospitalId}/usage`,
+          `${baseUrl}/api/vendor/hospitals/${hospitalId}/usage`,
           { credentials: "include" }
         );
 

@@ -43,7 +43,7 @@ export default function PackagesPage() {
       try {
         setLoading(true);
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
-        const res = await fetch(`${baseUrl}/packages?limit=100`, {
+        const res = await fetch(`${baseUrl}/api/vendor/packages?limit=100`, {
           credentials: "include",
         });
 

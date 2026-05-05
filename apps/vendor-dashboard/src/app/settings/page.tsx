@@ -60,7 +60,7 @@ export default function SettingsPage() {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
 
         // Fetch profile
-        const profileRes = await fetch(`${baseUrl}/vendor/profile`, {
+        const profileRes = await fetch(`${baseUrl}/api/vendor/profile`, {
           credentials: "include",
         });
         if (profileRes.ok) {
@@ -69,7 +69,7 @@ export default function SettingsPage() {
         }
 
         // Fetch API keys
-        const keysRes = await fetch(`${baseUrl}/vendor/api-keys`, {
+        const keysRes = await fetch(`${baseUrl}/api/vendor/api-keys`, {
           credentials: "include",
         });
         if (keysRes.ok) {
@@ -78,7 +78,7 @@ export default function SettingsPage() {
         }
 
         // Fetch team members
-        const teamRes = await fetch(`${baseUrl}/vendor/team`, {
+        const teamRes = await fetch(`${baseUrl}/api/vendor/team`, {
           credentials: "include",
         });
         if (teamRes.ok) {

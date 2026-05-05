@@ -86,7 +86,7 @@ export default function NewHospitalPage() {
       setError(null);
 
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4001";
-      const res = await fetch(`${baseUrl}/hospitals`, {
+      const res = await fetch(`${baseUrl}/api/vendor/hospitals`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
